@@ -2,27 +2,24 @@
 
 # 🔴 clips
 
-**Instant replay for Windows, engineered for zero overhead.**
-
-A single 500 KB exe that buffers your screen to RAM around the clock at ~0.6 % of one CPU core.
-Press <kbd>Alt</kbd>+<kbd>C</kbd> and the last 15/30/60 seconds hit disk as an MP4 in ~130 ms.
+**Highly optimized instant replay for Windows 10/11**
 
 </div>
 
 ---
 
-## Why
+## Why use clips?
 
-- **No game impact.** Frames never leave the GPU: capture, color conversion, and scaling are all GPU passes, and encoding runs on the GPU's dedicated video silicon, not your cores or the 3D engine.
-- **Instant saves.** The buffer is already HEVC-compressed, so saving is a remux, not a re-encode. A 30 s clip writes in about 130 ms.
-- **No bloat.** One portable exe. No installer, no service, no account, no overlay, no GPU vendor suite.
-- **Never dies.** A supervisor restarts capture/audio legs on device loss, monitor changes, audio device swaps, and panics. Built in Rust.
+- **No game impact!** Frames never leave the GPU: capture, color conversion, and scaling are all GPU passes, and encoding runs on the GPU's dedicated video silicon.
+- **Instant saves!** The buffer is already HEVC-compressed, so saving is a remux, not a re-encode, and saves in 1/10th of a second.
+- **No bloat!** One portable exe. No installer, no service, no account, no overlay.
+- **Never dies!** A supervisor restarts capture/audio legs on device loss, monitor changes, audio device swaps, and panics. Built in Rust.
 
 ## Use
 
-1. Run `clips.exe`. It sits in the tray.
+1. Run `clips.exe`. It will appear in the tray.
 2. Something cool happens? Press <kbd>Alt</kbd>+<kbd>C</kbd>.
-3. The clip lands in `Videos\Clips`, with a chime on success.
+3. The clip saves to `Videos\Clips`, with a chime on success.
 
 Everything else is in the tray menu:
 
@@ -31,18 +28,27 @@ Everything else is in the tray menu:
 | Clip length | 15 / 30 / 60 s |
 | Resolution | Native / 1440p / 1080p / 720p |
 | Quality | High / Medium / Low (3.1 / 1.9 / 1.0 MB/s) |
-| Microphone | Off / Default / specific device, mixed into the system-audio track |
+| Microphone | Off / Default / specific device |
 | Monitor | Primary or any attached display |
 | Capture cursor | On / Off |
 | Start with Windows | Registers the exe's current location, so keep it somewhere permanent |
 
 ## How it works
+```mermaid
+flowchart LR
+    A[Windows Graphics Capture] --> B[GPU BGRA-to-NV12]
+    B --> C[Hardware HEVC]
+    C --> D[Ring buffer<br/>RAM]
 
-```
-Windows Graphics Capture -> GPU BGRA-to-NV12 -> hardware HEVC -> ring buffer (RAM)
-WASAPI loopback + mic    -> AAC              -> ring buffer        | Alt+C
-                                                                   v
-                                              pass-through mux  -> .mp4
+    E[WASAPI loopback + mic] --> F[AAC]
+    F --> G[Ring buffer]
+
+    D --> H[Pass-through mux]
+    G --> H
+
+    I[Alt+C] --> H
+
+    H --> J[.mp4]
 ```
 
 Video and audio share the QPC clock, so sync is exact with no resampling or drift correction. The ring holds encoded packets only (~140 MB for 60 s at default quality, hard-capped at 400 MB).
